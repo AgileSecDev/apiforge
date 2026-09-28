@@ -92,14 +92,20 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+database_name = os.getenv('DATABASE_NAME') or os.getenv('DB_NAME')
+database_user = os.getenv('DATABASE_USER') or os.getenv('DB_USER', '')
+database_password = os.getenv('DATABASE_PASSWORD') or os.getenv('DB_PASSWORD', '')
+database_host = os.getenv('DATABASE_HOST') or os.getenv('DB_HOST', '')
+database_port = os.getenv('DATABASE_PORT') or os.getenv('DB_PORT', '')
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql' if os.getenv('DATABASE_NAME') else 'django.db.backends.sqlite3',
-        'NAME': os.getenv('DATABASE_NAME') or BASE_DIR / 'db.sqlite3',
-        'USER': os.getenv('DATABASE_USER', ''),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
-        'HOST': os.getenv('DATABASE_HOST', ''),
-        'PORT': os.getenv('DATABASE_PORT', ''),
+        'ENGINE': 'django.db.backends.postgresql' if database_name else 'django.db.backends.sqlite3',
+        'NAME': database_name or BASE_DIR / 'db.sqlite3',
+        'USER': database_user,
+        'PASSWORD': database_password,
+        'HOST': database_host,
+        'PORT': database_port,
         'CONN_MAX_AGE': 60,
     }
 }

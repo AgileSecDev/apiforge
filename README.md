@@ -283,7 +283,7 @@ Set `SECRET_KEY` in `backend/.env` to a random value. For example:
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-The backend uses SQLite by default, so it can run locally without PostgreSQL. To use PostgreSQL, create the database and set `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_HOST`, and `DATABASE_PORT` in `backend/.env`.
+The backend uses SQLite by default, so it can run locally without PostgreSQL. To use PostgreSQL, create the database and set `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_HOST`, and `DATABASE_PORT` in `backend/.env`. The shorter `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` names are also accepted.
 
 Then run:
 
@@ -292,6 +292,8 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+`migrate` creates the built-in Django tables and the ApiForge workspace, collection, request, environment, and history tables from the checked-in migrations.
 
 The API is rooted at `http://127.0.0.1:8000/api/`. Obtain a JWT pair at `/api/auth/token/` and refresh an access token at `/api/auth/token/refresh/`.
 
