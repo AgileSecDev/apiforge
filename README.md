@@ -270,15 +270,30 @@ Users can reopen previous requests and execute them again.
 ```bash
 cd backend
 
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 
 pip install -r requirements.txt
+cp -n .env.example .env
+```
 
+Set `SECRET_KEY` in `backend/.env` to a random value. For example:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+The backend uses SQLite by default, so it can run locally without PostgreSQL. To use PostgreSQL, create the database and set `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_HOST`, and `DATABASE_PORT` in `backend/.env`.
+
+Then run:
+
+```bash
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+The API is rooted at `http://127.0.0.1:8000/api/`. Obtain a JWT pair at `/api/auth/token/` and refresh an access token at `/api/auth/token/refresh/`.
 
 Backend:
 
@@ -309,22 +324,7 @@ http://localhost:5173
 
 ## 🔧 Environment Configuration
 
-Create a `.env` file for local configuration.
-
-Example:
-
-```env
-SECRET_KEY=your_secret_key
-DEBUG=True
-
-DATABASE_NAME=apiforge
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your_password
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-```
-
-Do not commit `.env` files to GitHub.
+Copy `backend/.env.example` to `backend/.env` for local settings. `.env` files are ignored by Git. `DEBUG` should be disabled and a strong `SECRET_KEY` and production `ALLOWED_HOSTS` supplied before deployment.
 
 ---
 
@@ -341,7 +341,7 @@ Backend:
 
 ```bash
 cd backend
-source venv/bin/activate
+source .venv/bin/activate
 python manage.py runserver
 ```
 
