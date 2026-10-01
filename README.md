@@ -383,7 +383,7 @@ Planned security features include:
 * [x] Project setup
 * [x] React frontend setup
 * [x] Django backend setup
-* [ ] PostgreSQL configuration
+* [x] PostgreSQL configuration
 
 ### Phase 2 — Authentication
 

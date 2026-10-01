@@ -16,6 +16,20 @@ export function register(details) {
   });
 }
 
+export function fetchProfile(accessToken) {
+  return requestJson("accounts/me/", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function updateProfile(accessToken, details) {
+  return requestJson("accounts/me/", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(details),
+  });
+}
+
 export function getSession() {
   try {
     return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
@@ -30,4 +44,11 @@ export function saveSession(tokens, username) {
 
 export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
+}
+
+export function updateSessionProfile(profile) {
+  const session = getSession();
+  if (session) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...session, username: profile.username }));
+  }
 }

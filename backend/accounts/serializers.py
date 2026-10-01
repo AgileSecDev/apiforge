@@ -29,3 +29,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
 	def create(self, validated_data):
 		validated_data.pop('password_confirm')
 		return User.objects.create_user(**validated_data)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = User
+		fields = ('id', 'username', 'email', 'date_joined')
+		read_only_fields = ('id', 'date_joined')
+
+	def validate_email(self, email):
+		normalized_email = email.strip().lower()
+		if User.objects.filter(email__iexact=normalized_email).exclude(pk=self.instance.pk).exists():
+			raise serializers.ValidationError('An account with this email already exists.')
+		return normalized_email

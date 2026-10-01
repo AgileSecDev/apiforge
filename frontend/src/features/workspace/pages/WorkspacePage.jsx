@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ArrowUpRight, Braces, Clock3, FolderKanban, LogOut } from "lucide-react";
-import { clearSession, getSession } from "../../auth/api/authApi.js";
+import { Activity, ArrowUpRight, Braces, Clock3, FolderKanban, LogOut, UserRound } from "lucide-react";
+import { clearSession, getSession, updateSessionProfile } from "../../auth/api/authApi.js";
 import Brand from "../../../shared/components/Brand.jsx";
+import ProfilePanel from "../components/ProfilePanel.jsx";
 
 const workspaceSections = [
   { label: "Collections", icon: FolderKanban },
@@ -12,7 +14,14 @@ const workspaceSections = [
 export default function WorkspacePage() {
   const navigate = useNavigate();
   const session = getSession();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState(session?.username || "developer");
   const username = session?.username || "developer";
+
+  function handleProfileUpdated(profile) {
+    setProfileName(profile.username);
+    updateSessionProfile(profile);
+  }
 
   function handleSignOut() {
     clearSession();
@@ -42,8 +51,11 @@ export default function WorkspacePage() {
         </nav>
         <div className="sidebar-bottom">
           <div className="account-row">
-            <span className="account-avatar">{username.slice(0, 1).toUpperCase()}</span>
-            <span className="account-name">{username}</span>
+            <button className="profile-trigger" type="button" onClick={() => setIsProfileOpen(true)} aria-label="Open your profile details">
+              <span className="account-avatar">{profileName.slice(0, 1).toUpperCase()}</span>
+              <span className="account-name">{profileName}<small>View profile</small></span>
+              <UserRound className="profile-trigger-icon" size={15} />
+            </button>
             <button className="icon-button" type="button" onClick={handleSignOut} aria-label="Sign out" title="Sign out">
               <LogOut size={16} />
             </button>
@@ -99,6 +111,13 @@ export default function WorkspacePage() {
           </section>
         </div>
       </section>
+      {isProfileOpen && (
+        <ProfilePanel
+          accessToken={session?.access}
+          onClose={() => setIsProfileOpen(false)}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
     </main>
   );
 }
