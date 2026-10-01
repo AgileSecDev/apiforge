@@ -98,6 +98,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .primary-button { display: flex; min-height: 48px; align-items: center; justify-content: center; gap: 9px; margin-top: 5px; border: 0; border-radius: 7px; background: var(--orange); color: #fff; cursor: pointer; font-size: 14px; font-weight: 700; transition: background 140ms ease, transform 140ms ease; }
 .primary-button:hover:not(:disabled) { background: var(--orange-dark); transform: translateY(-1px); }
 .primary-button:disabled { cursor: wait; opacity: .7; }
+.forgot-password-link { justify-self: end; margin-top: -9px; color: var(--orange-dark); font-size: 12px; font-weight: 600; }
+.forgot-password-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .form-notice { margin: 0 0 17px; border: 1px solid #f1c8b5; border-radius: 7px; background: #fff7f2; padding: 11px 13px; color: #a63f14; font-size: 13px; line-height: 1.5; }
 .notice-success { border-color: #b8dfcb; background: #f1faf5; color: #27694c; }
 .form-footnote { gap: 7px; margin: 22px 0 0; color: #85847e; font-size: 11px; line-height: 1.5; }

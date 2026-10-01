@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, LockKeyhole, UserRound } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell.jsx";
 import { FormField, FormNotice, PasswordField } from "../components/FormField.jsx";
 import { login, saveSession } from "../api/authApi.js";
@@ -68,6 +68,7 @@ export default function LoginPage() {
           onToggle={() => setShowPassword((current) => !current)}
           required
         />
+        <Link className="forgot-password-link" to="/forgot-password">Forgot your password?</Link>
         <button className="primary-button" type="submit" disabled={isSubmitting}>
           <span>{isSubmitting ? "Signing in..." : "Sign in"}</span>
           {!isSubmitting && <ArrowRight size={17} />}

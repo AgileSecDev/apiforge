@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import LoginPage from "./features/auth/pages/LoginPage.jsx";
 import RegisterPage from "./features/auth/pages/RegisterPage.jsx";
+import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage.jsx";
+import ResetPasswordPage from "./features/auth/pages/ResetPasswordPage.jsx";
 import WorkspacePage from "./features/workspace/pages/WorkspacePage.jsx";
 import { getSession } from "./features/auth/api/authApi.js";
 
@@ -38,6 +40,8 @@ export default function App() {
           </GuestRoute>
         }
       />
+      <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+      <Route path="/reset-password/:uid/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
       <Route
         path="/app"
         element={

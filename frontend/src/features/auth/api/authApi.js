@@ -16,6 +16,20 @@ export function register(details) {
   });
 }
 
+export function requestPasswordReset(email) {
+  return requestJson("accounts/password-reset/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function confirmPasswordReset(details) {
+  return requestJson("accounts/password-reset/confirm/", {
+    method: "POST",
+    body: JSON.stringify(details),
+  });
+}
+
 export function fetchProfile(accessToken) {
   return requestJson("accounts/me/", {
     headers: { Authorization: `Bearer ${accessToken}` },

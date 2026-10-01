@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase
+from django.test import override_settings
 from rest_framework.test import APIClient
 
 
@@ -97,3 +99,39 @@ class UserProfileAPITests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data['username'], 'updated_profile')
 		self.assertEqual(response.data['email'], 'updated@example.com')
+
+
+class PasswordResetAPITests(TestCase):
+	def setUp(self):
+		self.client = APIClient()
+		self.user = get_user_model().objects.create_user(
+			username='reset_user', email='reset@example.com', password='OldPassword!42'
+		)
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_reset_request_sends_link_without_revealing_account_existence(self):
+		response = self.client.post('/api/accounts/password-reset/', {'email': self.user.email}, format='json')
+		unknown_response = self.client.post('/api/accounts/password-reset/', {'email': 'unknown@example.com'}, format='json')
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data, unknown_response.data)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn('/reset-password/', mail.outbox[0].body)
+		self.assertEqual(len(mail.outbox[0].alternatives), 1)
+		self.assertIn('Update password', mail.outbox[0].alternatives[0][0])
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_reset_confirm_changes_password_and_invalidates_token(self):
+		self.client.post('/api/accounts/password-reset/', {'email': self.user.email}, format='json')
+		reset_url = mail.outbox[0].body.split('/reset-password/', 1)[1].split()[0]
+		uid, token = reset_url.split('/')
+		response = self.client.post('/api/accounts/password-reset/confirm/', {
+			'uid': uid, 'token': token, 'password': 'NewPassword!42', 'password_confirm': 'NewPassword!42'
+		}, format='json')
+
+		self.assertEqual(response.status_code, 200)
+		self.user.refresh_from_db()
+		self.assertTrue(self.user.check_password('NewPassword!42'))
+		self.assertEqual(self.client.post('/api/accounts/password-reset/confirm/', {
+			'uid': uid, 'token': token, 'password': 'AnotherPassword!42', 'password_confirm': 'AnotherPassword!42'
+		}, format='json').status_code, 400)
