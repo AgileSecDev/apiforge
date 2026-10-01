@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ArrowUpRight, Braces, Clock3, FolderKanban, LogOut, UserRound } from "lucide-react";
+import { Activity, ArrowUpRight, Braces, Check, Clock3, FolderKanban, LogOut, Play, Save, UserRound } from "lucide-react";
 import { clearSession, getSession, updateSessionProfile } from "../../auth/api/authApi.js";
 import Brand from "../../../shared/components/Brand.jsx";
 import ProfilePanel from "../components/ProfilePanel.jsx";
+import { createCollection, fetchCollections, saveRequest } from "../api/collectionsApi.js";
 
 const workspaceSections = [
   { label: "Collections", icon: FolderKanban },
@@ -11,10 +12,145 @@ const workspaceSections = [
   { label: "History", icon: Clock3 },
 ];
 
+const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+
+function CollectionsPage({ accessToken }) {
+  const [method, setMethod] = useState("GET");
+  const [url, setUrl] = useState("https://jsonplaceholder.typicode.com/todos/1");
+  const [response, setResponse] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const [collections, setCollections] = useState([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState("");
+  const [isLoadingCollections, setIsLoadingCollections] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  useEffect(() => {
+    fetchCollections(accessToken)
+      .then((result) => {
+        setCollections(result);
+        if (result[0]) setSelectedCollectionId(String(result[0].id));
+      })
+      .catch(() => setCollections([]))
+      .finally(() => setIsLoadingCollections(false));
+  }, [accessToken]);
+
+  async function sendRequest(event) {
+    event.preventDefault();
+    setIsSending(true);
+    setResponse(null);
+    const startedAt = performance.now();
+
+    try {
+      const result = await fetch(url.trim(), { method });
+      const contentType = result.headers.get("content-type") || "";
+      const body = contentType.includes("json") ? await result.json() : await result.text();
+      setResponse({
+        ok: result.ok,
+        status: result.status,
+        statusText: result.statusText,
+        duration: Math.round(performance.now() - startedAt),
+        body,
+        contentType: contentType || "Not provided",
+      });
+    } catch (requestError) {
+      setResponse({ error: requestError.message, duration: Math.round(performance.now() - startedAt) });
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function handleSaveRequest() {
+    setIsSaving(true);
+    setSaveMessage("");
+    try {
+      let collectionId = selectedCollectionId;
+      let nextCollections = collections;
+      if (!collectionId) {
+        const collection = await createCollection(accessToken, { name: "My requests" });
+        nextCollections = [collection, ...collections];
+        setCollections(nextCollections);
+        collectionId = String(collection.id);
+        setSelectedCollectionId(collectionId);
+      }
+      await saveRequest(accessToken, {
+        collection: Number(collectionId),
+        name: `${method} ${new URL(url).pathname || "/"}`,
+        method,
+        url: url.trim(),
+      });
+      setSaveMessage("Request saved");
+    } catch (requestError) {
+      setSaveMessage(requestError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div className="collections-page">
+      <div className="collections-heading">
+        <div>
+          <p className="page-eyebrow">API COLLECTIONS</p>
+          <h1>Send a request</h1>
+          <p>Enter an endpoint, choose a method, and inspect the response below.</p>
+        </div>
+        <span className="collection-status"><Check size={14} /> Ready</span>
+      </div>
+
+      <section className="request-composer" aria-label="API request composer">
+        <form onSubmit={sendRequest}>
+          <div className="request-controls">
+            <label className="method-select">
+              <span className="sr-only">HTTP method</span>
+              <select value={method} onChange={(event) => setMethod(event.target.value)}>
+                {methods.map((option) => <option key={option}>{option}</option>)}
+              </select>
+            </label>
+            <label className="url-input">
+              <span className="sr-only">Request URL</span>
+              <input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://api.example.com/users" required aria-label="Request URL" />
+            </label>
+            <button className="send-request-button" type="submit" disabled={isSending}>
+              <Play size={15} fill="currentColor" /> {isSending ? "Sending..." : "Send"}
+            </button>
+          </div>
+          <div className="request-options">
+            <div className="collection-picker"><label htmlFor="request-collection">Collection</label><select id="request-collection" value={selectedCollectionId} onChange={(event) => setSelectedCollectionId(event.target.value)} disabled={isLoadingCollections}><option value="">Create new collection on save</option>{collections.map((collection) => <option key={collection.id} value={collection.id}>{collection.name}</option>)}</select></div>
+            <button className="save-request-button" type="button" onClick={handleSaveRequest} disabled={isSaving || !url.trim()}><Save size={14} /> {isSaving ? "Saving..." : "Save request"}</button>
+            {saveMessage && <span className="save-message">{saveMessage}</span>}
+          </div>
+          <p className="request-helper">Public endpoints can be tested directly from the browser. Authentication and headers can be added next.</p>
+        </form>
+      </section>
+
+      {collections.length > 0 && <section className="saved-collections" aria-label="Saved collections"><div className="saved-collections-heading"><p className="page-eyebrow">SAVED REQUESTS</p><span>{collections.length} collection{collections.length === 1 ? "" : "s"}</span></div>{collections.map((collection) => <div className="saved-collection-row" key={collection.id}><strong>{collection.name}</strong><span>{collection.requests?.length || 0} request{collection.requests?.length === 1 ? "" : "s"}</span></div>)}</section>}
+
+      <section className="response-panel" aria-live="polite" aria-label="API response">
+        <header className="response-panel-header">
+          <div><p className="page-eyebrow">RESPONSE</p><h2>{response ? "Latest response" : "Response output"}</h2></div>
+          {response && !response.error && <div className={response.ok ? "response-meta response-success" : "response-meta response-failure"}><span>{response.status} {response.statusText}</span><span>{response.duration} ms</span></div>}
+        </header>
+        {!response ? (
+          <div className="response-empty"><span className="response-empty-icon"><Play size={16} /></span><p>Your response will appear here</p><span>Send a request to see the status and returned data.</span></div>
+        ) : response.error ? (
+          <div className="response-error"><strong>Request failed</strong><span>{response.error}</span></div>
+        ) : (
+          <>
+            <div className="response-details"><span>Content-Type <strong>{response.contentType}</strong></span><span>Request time <strong>{response.duration} ms</strong></span></div>
+            <pre className="response-body">{typeof response.body === "string" ? response.body : JSON.stringify(response.body, null, 2)}</pre>
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export default function WorkspacePage() {
   const navigate = useNavigate();
   const session = getSession();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("Overview");
   const [profileName, setProfileName] = useState(session?.username || "developer");
   const username = session?.username || "developer";
 
@@ -39,14 +175,14 @@ export default function WorkspacePage() {
         </div>
         <nav className="workspace-nav" aria-label="Workspace navigation">
           <span className="nav-section-label">WORKSPACE</span>
-          <a className="workspace-nav-item nav-item-active" href="#overview" aria-current="page">
+          <button className={`workspace-nav-item ${activeSection === "Overview" ? "nav-item-active" : "nav-item-muted"}`} type="button" onClick={() => setActiveSection("Overview")}>
             <Activity size={17} /> Overview
-          </a>
+          </button>
           <span className="nav-section-label nav-section-spaced">YOUR DATA</span>
           {workspaceSections.map(({ label, icon: Icon }) => (
-            <span className="workspace-nav-item nav-item-muted" key={label}>
+            <button className={`workspace-nav-item ${activeSection === label ? "nav-item-active" : "nav-item-muted"}`} type="button" key={label} onClick={() => setActiveSection(label)}>
               <Icon size={17} /> {label}
-            </span>
+            </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
@@ -65,10 +201,12 @@ export default function WorkspacePage() {
 
       <section className="workspace-main">
         <header className="workspace-topbar">
-          <div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>Overview</strong></div>
+          <div className="breadcrumbs"><span>Workspace</span><span>/</span><strong>{activeSection}</strong></div>
           <div className="topbar-state"><span className="live-dot" /> API session active</div>
         </header>
         <div className="workspace-content" id="overview">
+          {activeSection === "Collections" ? <CollectionsPage accessToken={session?.access} /> : (
+          <>
           <div className="workspace-page-heading">
             <div>
               <p className="page-eyebrow">PERSONAL WORKSPACE</p>
@@ -109,6 +247,8 @@ export default function WorkspacePage() {
               ))}
             </div>
           </section>
+          </>
+          )}
         </div>
       </section>
       {isProfileOpen && (
